@@ -8,6 +8,9 @@ import Login from "./pages/Login"
 import Dashboard from "./pages/Dashboard"
 import Logout from "./pages/Logout"  // NEW
 import "./index.css"
+import Confirm from "./pages/Confirm"
+// ...
+
 
 function role(){ return localStorage.getItem("role") || "" }
 
@@ -57,6 +60,7 @@ const router = createBrowserRouter([
   { path: "/login", element: <Layout><Login/></Layout> },
   { path: "/logout", element: <Layout><Logout/></Layout> },  // NEW
   { path: "/dashboard", element: <Layout><Dashboard/></Layout> },
+  { path: "/confirm", element: <Layout><Confirm/></Layout> },
 ])
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

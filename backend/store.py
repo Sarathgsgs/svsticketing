@@ -6,6 +6,7 @@ import numpy as np
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.preprocessing import normalize
 import services
+import uuid  # for magic tokens
 
 # Paths
 BASE_DIR = Path(__file__).resolve().parent
@@ -17,6 +18,7 @@ CONFIG_JSON = DATA_DIR / "config.json"
 SEED_CSV = DATA_DIR / "tickets_seed.csv"
 USERS_JSON = DATA_DIR / "users.json"
 NOTIFICATIONS_JSON = DATA_DIR / "notifications.json"
+MAGIC_JSON = DATA_DIR / "magic.json"  # <-- AFTER DATA_DIR
 
 # In-memory stores
 KB_DOCS: List[Dict[str, Any]] = []
@@ -25,6 +27,7 @@ TICKETS: List[Dict[str, Any]] = []
 DEFLECTIONS: List[Dict[str, Any]] = []
 USERS: List[Dict[str, Any]] = []
 NOTIFICATIONS: List[Dict[str, Any]] = []
+MAGIC: List[Dict[str, Any]] = []     # <-- magic tokens in memory
 
 # Vectorizers and matrices
 KB_VECT: Optional[TfidfVectorizer] = None
@@ -34,7 +37,6 @@ TICKET_MATRIX = None
 
 DEFAULT_CONFIG = {"auto_resolve_threshold": {"triage": 0.6, "kb": 0.6}, "dedup_similarity": 0.8}
 
-# ------------- Helpers -------------
 def _save_json(path: Path, data: Any):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -104,11 +106,13 @@ def load_notifications():
 def save_notifications():
     _save_json(NOTIFICATIONS_JSON, NOTIFICATIONS)
 
-def add_notification(username: str, message: str, ntype: str = "info") -> Dict[str, Any]:
+def add_notification(username: str, message: str, ntype: str = "info", link: str | None = None) -> Dict[str, Any]:
     nid = (max([n.get("id", 0) for n in NOTIFICATIONS]) + 1) if NOTIFICATIONS else 1
     evt = {"id": nid, "username": username, "message": message, "type": ntype, "ts": datetime.now(timezone.utc).isoformat()}
+    if link:
+        evt["link"] = link
     NOTIFICATIONS.append(evt)
-    save_notifications()
+    _save_json(NOTIFICATIONS_JSON, NOTIFICATIONS)
     return evt
 
 def get_notifications(username: str) -> List[Dict[str, Any]]:
@@ -118,6 +122,35 @@ def clear_notifications():
     global NOTIFICATIONS
     NOTIFICATIONS = []
     _save_json(NOTIFICATIONS_JSON, NOTIFICATIONS)
+
+def load_magic():
+    global MAGIC
+    MAGIC = _load_json(MAGIC_JSON, [])
+    _save_json(MAGIC_JSON, MAGIC)
+
+def save_magic():
+    _save_json(MAGIC_JSON, MAGIC)
+
+def create_magic(username: str, kind: str, payload: Dict[str, Any]) -> str:
+    token = uuid.uuid4().hex
+    MAGIC.append({
+        "token": token,
+        "username": username,
+        "kind": kind,            # e.g., "deflection_confirm"
+        "payload": payload,      # arbitrary dict (subject/body/etc)
+        "ts": datetime.now(timezone.utc).isoformat(),
+        "used": False
+    })
+    save_magic()
+    return token
+
+def consume_magic(token: str) -> Dict[str, Any] | None:
+    for item in MAGIC:
+        if item.get("token") == token and not item.get("used"):
+            item["used"] = True
+            save_magic()
+            return item
+    return None
 
 # ------------- KB -------------
 def chunk_text(text: str, tokens: int = 120):
@@ -328,6 +361,7 @@ def init():
     load_tickets()
     load_users()
     load_notifications()
+    load_magic()  # <-- add this
     try:
         retriage_missing()
     except Exception:

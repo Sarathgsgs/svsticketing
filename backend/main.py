@@ -55,6 +55,11 @@ class NotifyPayload(BaseModel):
     message: str
     type: Optional[str] = "info"
 
+class MagicCreatePayload(BaseModel):
+    username: str
+    kind: str
+    payload: Dict[str, Any]
+
 @app.post("/api/triage")
 def api_triage(payload: CreateTicket):
     textq = f"{payload.subject}\n{payload.body}".strip()
@@ -163,3 +168,25 @@ def api_demo_reset(username: str = "tech2345",
     if clear_deflections:
         store.clear_deflections()
     return {"ok": True}
+
+@app.post("/api/magic/create")
+def api_magic_create(payload: MagicCreatePayload):
+    token = store.create_magic(payload.username, payload.kind, payload.payload)
+    url = f"http://localhost:5173/confirm?token={token}"
+    return {"ok": True, "token": token, "url": url}
+
+@app.get("/api/magic/confirm")
+def api_magic_confirm(token: str, ok: bool = True):
+    item = store.consume_magic(token)
+    if not item:
+        return {"ok": False, "error": "invalid_or_used_token"}
+    # If user says "Still broken", create a ticket from saved payload
+    if not ok:
+        payload = item.get("payload") or {}
+        subject = payload.get("subject", "Issue")
+        body = payload.get("body", "No details")
+        tri = services.classify(f"{subject}\n{body}")
+        t = store.add_ticket(subject, body, tri, attachments=payload.get("attachments") or [])
+        return {"ok": True, "created_ticket_id": t["id"], "payload": payload}
+    # If "It worked", mark success; could increment an analytic in future
+    return {"ok": True, "confirmed": True}
