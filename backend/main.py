@@ -2,11 +2,22 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
+
 import services, store, fixes, assist
+
+# optional actions import (fallback runner included)
+try:
+    import actions
+    def run_action(action_id: str, params: Dict[str, Any]):
+        return actions.run_action(action_id, params or {})
+except Exception:
+    def run_action(action_id: str, params: Dict[str, Any]):
+        return [f"[SIMULATION] Run {action_id} with {params}"]
 
 app = FastAPI(title="POWERGRID Ops API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+# --------- Models ----------
 class Attachment(BaseModel):
     filename: str
     data_url: str
@@ -60,6 +71,28 @@ class MagicCreatePayload(BaseModel):
     kind: str
     payload: Dict[str, Any]
 
+class ActionRequest(BaseModel):
+    action_id: str
+    params: Dict[str, Any] = {}
+    requested_by: str
+    require_elevation: bool = False
+    elevation_token: Optional[str] = None
+
+class ActionDecision(BaseModel):
+    id: int
+    approved: bool
+    reviewer: str
+
+class ElevationRequest(BaseModel):
+    user: str
+    scope: str
+    minutes: int = 15
+
+class MiCreatePayload(BaseModel):
+    seed_ticket_id: int
+    threshold: float = 0.85
+
+# --------- Endpoints ----------
 @app.post("/api/triage")
 def api_triage(payload: CreateTicket):
     textq = f"{payload.subject}\n{payload.body}".strip()
@@ -67,7 +100,9 @@ def api_triage(payload: CreateTicket):
     hits = store.kb_search(textq, k=3)
     dupes = store.dedup(textq, k=3)
     top_kb = hits[0]["title"] if hits else None
-    return {"triage": tri, "kb": hits, "duplicates": dupes, "top_kb": top_kb}
+    ctx = store.get_service_meta(tri.get("service",""))
+    chg = store.get_recent_change(tri.get("service",""))
+    return {"triage": tri, "kb": hits, "duplicates": dupes, "top_kb": top_kb, "context": {"blast_radius": ctx, "recent_change": chg}}
 
 @app.post("/api/tickets")
 def api_create_ticket(payload: CreateTicket):
@@ -75,6 +110,7 @@ def api_create_ticket(payload: CreateTicket):
     tri = services.classify(textq)
     t = store.add_ticket(payload.subject, payload.body, tri, attachments=[a.dict() for a in (payload.attachments or [])])
     dupes = store.dedup(textq, k=3)
+    store.bump_counter(tri.get("service",""))
     return {"id": t["id"], "triage": tri, "duplicates": dupes}
 
 @app.get("/api/tickets")
@@ -142,7 +178,7 @@ def api_login(payload: LoginPayload):
     if not store.check_password(u, payload.password):
         return {"ok": False, "reason": "bad_password"}
     return {"ok": True, "role": u.get("role", "user")}
-    
+
 @app.post("/api/auth/unlock")
 def api_unlock(payload: UnlockPayload):
     store.unlock_user(payload.username)
@@ -158,17 +194,7 @@ def api_notify(payload: NotifyPayload):
     evt = store.add_notification(payload.username, payload.message, payload.type or "info")
     return {"ok": True, "event": evt}
 
-@app.post("/api/demo/reset")
-def api_demo_reset(username: str = "tech2345",
-                   clear_notifications: bool = True,
-                   clear_deflections: bool = False):
-    store.lock_user(username)
-    if clear_notifications:
-        store.clear_notifications()
-    if clear_deflections:
-        store.clear_deflections()
-    return {"ok": True}
-
+# Magic links
 @app.post("/api/magic/create")
 def api_magic_create(payload: MagicCreatePayload):
     token = store.create_magic(payload.username, payload.kind, payload.payload)
@@ -179,8 +205,10 @@ def api_magic_create(payload: MagicCreatePayload):
 def api_magic_confirm(token: str, ok: bool = True):
     item = store.consume_magic(token)
     if not item:
+        seen = store.get_magic(token)
+        if seen and seen.get("used"):
+            return {"ok": True, "already": True}
         return {"ok": False, "error": "invalid_or_used_token"}
-    # If user says "Still broken", create a ticket from saved payload
     if not ok:
         payload = item.get("payload") or {}
         subject = payload.get("subject", "Issue")
@@ -188,5 +216,64 @@ def api_magic_confirm(token: str, ok: bool = True):
         tri = services.classify(f"{subject}\n{body}")
         t = store.add_ticket(subject, body, tri, attachments=payload.get("attachments") or [])
         return {"ok": True, "created_ticket_id": t["id"], "payload": payload}
-    # If "It worked", mark success; could increment an analytic in future
     return {"ok": True, "confirmed": True}
+
+# Demo reset
+@app.post("/api/demo/reset")
+def api_demo_reset(username: str = "tech2345", clear_notifications: bool = True, clear_deflections: bool = False):
+    store.lock_user(username)
+    if clear_notifications:
+        store.clear_notifications()
+    if clear_deflections:
+        store.clear_deflections()
+    return {"ok": True}
+
+# Actions / approvals / elevation
+@app.post("/api/actions/request")
+def api_actions_request(payload: ActionRequest):
+    ap = store.add_approval(payload.action_id, payload.params, payload.requested_by, payload.require_elevation, payload.elevation_token)
+    return {"ok": True, "approval": ap}
+
+@app.post("/api/actions/decision")
+def api_actions_decision(payload: ActionDecision):
+    ap = store.update_approval(payload.id, payload.approved, payload.reviewer)
+    if not ap:
+        return {"ok": False, "error": "not_found"}
+    if ap["status"] == "approved":
+        ap = store.exec_approval(ap["id"], run_action)
+    return {"ok": True, "approval": ap}
+
+@app.get("/api/approvals")
+def api_approvals():
+    return {"items": store.list_approvals()}
+
+@app.post("/api/elevation/request")
+def api_elevation_request(payload: ElevationRequest):
+    tok = store.request_elevation(payload.user, payload.scope, payload.minutes)
+    return {"ok": True, "token": tok}
+
+@app.post("/api/elevation/verify")
+def api_elevation_verify(token: str):
+    return {"ok": store.is_elevated(token)}
+
+# Major Incident and spikes
+@app.post("/api/mi/create")
+def api_mi_create(payload: MiCreatePayload):
+    mi = store.create_mi(payload.seed_ticket_id, th=payload.threshold)
+    return {"ok": True, "mi": mi}
+
+@app.get("/api/mi")
+def api_mi_list():
+    return {"items": store.list_mi()}
+
+@app.get("/api/spikes")
+def api_spikes():
+    return {"items": store.get_spikes()}
+
+@app.get("/api/metrics/breakdown")
+def api_metrics_breakdown():
+    return store.metrics_breakdown()
+
+@app.get("/api/metrics/series")
+def api_metrics_series(hours: int = 24):
+    return store.metrics_series(hours)
