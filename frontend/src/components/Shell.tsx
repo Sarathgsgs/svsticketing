@@ -14,7 +14,7 @@ export default function Shell({ children }: { children: ReactNode }) {
     <div className="shell">
       <aside className="sidebar">
         <div className="brand">
-          <span className="dot" /> POWERGRID Ops
+          <span className="dot" /> TicketPilot
         </div>
         <div className="nav">
           <NavLink to="/" className={({ isActive }) => (isActive ? "active" : "")}>
@@ -36,10 +36,7 @@ export default function Shell({ children }: { children: ReactNode }) {
             </NavLink>
           )}
         </div>
-        <div style={{ marginTop: "auto", fontSize: 12, color: "var(--muted)" }}>
-          <div>GLPI/SolMan-inspired UI</div>
-          <div>v0.2</div>
-        </div>
+        {/* footer removed */}
       </aside>
 
       <div style={{ display: "grid", gridTemplateRows: "52px 1fr" }}>
@@ -49,11 +46,7 @@ export default function Shell({ children }: { children: ReactNode }) {
           </div>
           <div className="header-right">
             <RolePill />
-            {loggedIn && (
-              <Link to="/logout" className="btn-secondary">
-                Logout
-              </Link>
-            )}
+            {loggedIn && <Link to="/logout" className="btn-secondary">Logout</Link>}
           </div>
         </header>
 

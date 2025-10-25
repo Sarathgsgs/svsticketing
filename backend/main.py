@@ -14,7 +14,7 @@ except Exception:
     def run_action(action_id: str, params: Dict[str, Any]):
         return [f"[SIMULATION] Run {action_id} with {params}"]
 
-app = FastAPI(title="POWERGRID Ops API")
+app = FastAPI(title="TicketPilot API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
 # --------- Models ----------
