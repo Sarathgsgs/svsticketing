@@ -1,0 +1,25 @@
+﻿:root { --bg:#0b1220; --panel:#111827; --panel2:#0f172a; --text:#e5e7eb; --muted:#9ca3af; --border:#1f2937; --pri:#2563eb; --pri6:#1d4ed8; --succ:#10b981; --succ6:#059669; --warn:#f59e0b; --danger:#ef4444; }
+*{box-sizing:border-box} html,body,#root{height:100%}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial;background:#0b1220;color:var(--text)}
+.nav{position:sticky;top:0;background:rgba(17,24,39,.8);backdrop-filter:blur(8px);border-bottom:1px solid var(--border)}
+.nav-inner{max-width:1100px;margin:0 auto;padding:12px 16px;display:flex;gap:12px}
+.nav a{color:var(--text);text-decoration:none;font-weight:600;padding:8px 10px;border-radius:8px}
+.nav a:hover{background:rgba(37,99,235,.15)}
+.container{max-width:1100px;margin:0 auto;padding:20px 16px 48px}
+.page-title{font-size:28px;font-weight:800;margin:8px 0 12px}
+.card{background:linear-gradient(180deg,var(--panel2),var(--panel));border:1px solid var(--border);border-radius:14px;padding:14px}
+.btn,.btn-secondary,.btn-success,.btn-danger{font-size:14px;padding:10px 14px;border-radius:10px;border:1px solid transparent;cursor:pointer}
+.btn{background:var(--pri);color:#fff}.btn:hover{background:var(--pri6)}
+.btn-secondary{background:transparent;color:var(--text);border-color:var(--border)}
+.btn-success{background:var(--succ);color:#04110b}.btn-danger{background:var(--danger);color:#fff}
+input,select,textarea{width:100%;background:#0b1220;color:var(--text);border:1px solid var(--border);border-radius:10px;padding:10px 12px}
+textarea{min-height:140px}
+.grid{display:grid;gap:12px}
+.grid-2{grid-template-columns:repeat(2,minmax(0,1fr))} @media(max-width:900px){.grid-2{grid-template-columns:1fr}}
+.flex{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.badge{display:inline-block;padding:4px 8px;border-radius:999px;background:rgba(37,99,235,.15);color:#bfdbfe;margin-right:6px;font-size:12px}
+.chip{display:inline-block;padding:4px 8px;border-radius:999px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:var(--muted);font-size:12px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;margin-right:6px}
+.green{background:#10b981}.amber{background:#f59e0b}.red{background:#ef4444}
+.muted{color:var(--muted)}
+.mt-1{margin-top:4px}.mt-2{margin-top:8px}.mt-3{margin-top:12px}

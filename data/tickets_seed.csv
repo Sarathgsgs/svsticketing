@@ -1,0 +1,6 @@
+﻿subject,body
+"SAP print issue","SP01 shows spool error in North plant"
+"VPN failing","VPN error 619 from field office"
+"Outlook slow","OST corruption suspected; search not working"
+"Printer queue jam","Users cannot print; queue stuck; spooler not clearing"
+"Password unlock","User unable to login; MFA code expired"
