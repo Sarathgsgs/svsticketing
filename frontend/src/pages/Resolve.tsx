@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react"
+import React, { useEffect, useMemo, useState } from "react"
 import axios from "axios"
 const api = axios.create({ baseURL:"/api", timeout:8000 })
 
@@ -57,7 +57,7 @@ export default function Resolve(){
   return (
     <>
       <div className="card" style={{marginBottom:10}}>
-        <div style={{display:"flex", gap:10, alignItems:"center"}}>
+        <div style={{display:"flex", gap:10, alignItems:"center", flexWrap:"wrap"}}>
           <input placeholder="Search subject/body..." value={q} onChange={e=>setQ(e.target.value)} />
           <select value={service} onChange={e=>setService(e.target.value)}>
             <option value="all">All services</option>

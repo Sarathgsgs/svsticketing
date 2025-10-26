@@ -1,66 +1,64 @@
 ﻿import React from "react"
 import ReactDOM from "react-dom/client"
-import { createBrowserRouter, RouterProvider, Link } from "react-router-dom"
+import { createBrowserRouter, RouterProvider } from "react-router-dom"
+import Shell from "./components/Shell"
 import Ask from "./pages/Ask"
 import Resolve from "./pages/Resolve"
 import Govern from "./pages/Govern"
 import Login from "./pages/Login"
+import Logout from "./pages/Logout"
 import Dashboard from "./pages/Dashboard"
-import Logout from "./pages/Logout"  // NEW
-import "./index.css"
 import Confirm from "./pages/Confirm"
-// ...
-
+import "./index.css"
 
 function role(){ return localStorage.getItem("role") || "" }
-
-function RoleGate({ roles, children }:{roles:string[], children:React.ReactNode}){
+function RoleGate({ roles, children }:{ roles: string[], children: React.ReactNode }) {
   const r = role()
-  if(!r || !roles.includes(r)){
+  if (!r || !roles.includes(r)) {
     return (
-      <div className="container">
-        <div className="card">
-          <div className="page-title">Access denied</div>
-          <div className="muted">Please login as {roles.join(" or ")}.</div>
-        </div>
+      <div className="card">
+        <div className="title" style={{fontSize:18}}>Access denied</div>
+        <div className="muted">Please login as {roles.join(" or ")}.</div>
       </div>
     )
   }
   return <>{children}</>
 }
 
-function Layout({ children }:{children:React.ReactNode}){
-  const r = role()
-  const loggedIn = !!r
-  return (
-    <div>
-      <div className="nav">
-        <div className="nav-inner">
-          <Link to="/">Ask</Link>
-          {["agent","admin"].includes(r) && <Link to="/resolve">Resolve</Link>}
-          {r==="admin" && <Link to="/govern">Govern</Link>}
-          {!loggedIn && <Link to="/login">Login</Link>}
-          {loggedIn && (
-            <>
-              <span className="chip">Role: {r}</span>
-              <Link to="/logout">Logout</Link>
-            </>
-          )}
-        </div>
-      </div>
-      <main className="container">{children}</main>
-    </div>
-  )
-}
-
 const router = createBrowserRouter([
-  { path: "/", element: <Layout><Ask/></Layout> },
-  { path: "/resolve", element: <Layout><RoleGate roles={["agent","admin"]}><Resolve/></RoleGate></Layout> },
-  { path: "/govern", element: <Layout><RoleGate roles={["admin"]}><Govern/></RoleGate></Layout> },
-  { path: "/login", element: <Layout><Login/></Layout> },
-  { path: "/logout", element: <Layout><Logout/></Layout> },  // NEW
-  { path: "/dashboard", element: <Layout><Dashboard/></Layout> },
-  { path: "/confirm", element: <Layout><Confirm/></Layout> },
+  { path: "/", element: <Shell>
+      <div className="page-head">
+        <div><div className="breadcrumb">Service Desk</div><div className="title">Ask</div></div>
+      </div>
+      <Ask/>
+    </Shell> },
+  { path: "/resolve", element: <Shell>
+      <div className="page-head">
+        <div><div className="breadcrumb">Service Desk / Resolve</div><div className="title">Resolve tickets</div></div>
+      </div>
+      <RoleGate roles={["agent","admin"]}><Resolve/></RoleGate>
+    </Shell> },
+  { path: "/govern", element: <Shell>
+      <div className="page-head">
+        <div><div className="breadcrumb">Administration / Govern</div><div className="title">Govern</div></div>
+      </div>
+      <RoleGate roles={["admin"]}><Govern/></RoleGate>
+    </Shell> },
+  { path: "/login", element: <Shell>
+      <div className="page-head"><div className="breadcrumb">Auth</div><div className="title">Login</div></div>
+      <Login/>
+    </Shell> },
+  { path: "/logout", element: <Shell>
+      <Logout/>
+    </Shell> },
+  { path: "/dashboard", element: <Shell>
+      <div className="page-head"><div className="breadcrumb">Home</div><div className="title">Dashboard</div></div>
+      <Dashboard/>
+    </Shell> },
+  { path: "/confirm", element: <Shell>
+      <div className="page-head"><div className="breadcrumb">Notifications</div><div className="title">Confirm fix</div></div>
+      <Confirm/>
+    </Shell> },
 ])
 
 ReactDOM.createRoot(document.getElementById("root")!).render(

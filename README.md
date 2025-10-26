@@ -1,9 +1,9 @@
-﻿# POWERGRID Ops (Smart Helpdesk MVP)
+﻿# TicketPilot (Smart helpdesk with automatic resolution)
 
-Run locally (two terminals):
+Quickstart (Windows)
 - Backend: scripts\start_backend.bat
 - Frontend: scripts\start_frontend.bat
-Open http://localhost:5173 (UI) and http://localhost:8000/api/metrics (API)
+Open UI: http://localhost:5173 · API: http://localhost:8000/api/metrics
 
 Pages
 - Ask (end-user): subject, details, screenshot upload + OCR, Suggest Fix, Create Ticket, Auto-resolve.

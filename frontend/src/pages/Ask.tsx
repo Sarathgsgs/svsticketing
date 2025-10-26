@@ -6,18 +6,13 @@ const api = axios.create({ baseURL: "/api", timeout: 12000 })
 type LocalImage = { file: File; preview: string; ocr?: string; error?: string }
 
 export default function Ask() {
-  // Form state
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")
   const [reportUser, setReportUser] = useState<string>("")
-
-  // AI + fixes
   const [result, setResult] = useState<any>(null)
   const [fixes, setFixes] = useState<any[]>([])
   const [duplicates, setDuplicates] = useState<any[]>([])
   const [cfg, setCfg] = useState<any>({ auto_resolve_threshold: { triage: 0.6, kb: 0.6 } })
-
-  // UI state
   const [images, setImages] = useState<LocalImage[]>([])
   const [loading, setLoading] = useState(false)
   const [ocrBusy, setOcrBusy] = useState(false)
@@ -31,12 +26,7 @@ export default function Ask() {
         await api.post("/triage", { subject: "warmup", body: "warmup" }, { timeout: 12000 })
         setWarmed(true)
       } catch { setWarmed(false) }
-
-      try {
-        const c = await api.get("/admin/config")
-        setCfg(c.data)
-      } catch {}
-
+      try { const c = await api.get("/admin/config"); setCfg(c.data) } catch {}
       const p = new URLSearchParams(window.location.search)
       const s = p.get("subject"); const b = p.get("body"); const u = p.get("username")
       if (s) setSubject(s)

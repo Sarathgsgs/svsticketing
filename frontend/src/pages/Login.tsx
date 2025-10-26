@@ -16,7 +16,8 @@ export default function Login(){
     // eslint-disable-next-line react-hooks/exhaustive-deps
   },[])
 
-  const login=async()=>{ setMsg("")
+  const login=async()=>{
+    setMsg("")
     try{
       const r=await api.post("/auth/login",{username,password})
       if(r.data?.ok){
@@ -38,17 +39,32 @@ export default function Login(){
     location.href=`/?subject=${encodeURIComponent(s)}&body=${encodeURIComponent(b)}&username=${encodeURIComponent(username)}`
   }
 
+  // Handle Enter key to login
+  const onKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") login()
+  }
+
   return (
-    <div className="card" style={{maxWidth:480}}>
-      <label>Username</label><input value={username} onChange={e=>setUsername(e.target.value)}/>
-      <label className="mt-2">Password</label><input type="password" value={password} onChange={e=>setPassword(e.target.value)}/>
-      {msg && <div className="mt-2 chip">{msg}</div>}
-      <div className="flex mt-3">
+    <div className="card" style={{maxWidth:480, margin:"0 auto"}}>
+      <div className="title" style={{fontSize:22, marginBottom:8}}>Sign in</div>
+      <label>Username</label>
+      <input
+        value={username}
+        onChange={e=>setUsername(e.target.value)}
+        onKeyDown={onKeyDown}
+        autoFocus
+      />
+      <label className="mt-2">Password</label>
+      <input
+        type="password"
+        value={password}
+        onChange={e=>setPassword(e.target.value)}
+        onKeyDown={onKeyDown}
+      />
+      {msg && <div className="mt-2 chip" style={{color:"var(--red)"}}>{msg}</div>}
+      <div className="flex mt-3" style={{gap:8}}>
         <button className="btn" onClick={login}>Login</button>
         <button className="btn-secondary" onClick={reportIssue}>Report issue</button>
-      </div>
-      <div className="mt-2 muted">
-        Demo: user tech2345/user123 (locked), agent agent1/agent123, admin admin1/admin123
       </div>
     </div>
   )

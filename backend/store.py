@@ -384,7 +384,7 @@ def get_service_meta(service: str) -> Dict[str, Any]:
 def get_recent_change(service: str) -> Dict[str, Any] | None:
     if not CHANGES: return None
     svc = (service or "").lower()
-    items = [c for c in CHANGES if (c.get("service","").lower()==svc)]
+    items = [c for c in CHANGES if isinstance(c, dict) and (c.get("service","").lower()==svc)]
     if not items: return None
     items.sort(key=lambda x: x.get("ts",""), reverse=True)
     return items[0]
