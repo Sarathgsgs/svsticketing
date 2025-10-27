@@ -6,6 +6,12 @@ const api = axios.create({ baseURL: "/api", timeout: 12000 })
 type LocalImage = { file: File; preview: string; ocr?: string; error?: string }
 
 export default function Ask() {
+  // New PowerGrid fields
+  const [type, setType] = useState("Incident")
+  const [urgency, setUrgency] = useState("Medium")
+  const [location, setLocation] = useState("Control Room")
+  const [asset, setAsset] = useState("SAP")
+
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")
   const [reportUser, setReportUser] = useState<string>("")
@@ -123,7 +129,9 @@ export default function Ask() {
         const dataUrl = await fileToDataUrl(img.file)
         attachments.push({ filename: img.file.name, data_url: dataUrl })
       }
-      const r = await api.post("/tickets", { subject, body, attachments }, { timeout: 12000, maxContentLength: 20 * 1024 * 1024 })
+      const r = await api.post("/tickets", {
+        subject, body, attachments, type, urgency, location, asset
+      }, { timeout: 12000, maxContentLength: 20 * 1024 * 1024 })
       alert(`Ticket PG-${r.data.id} created`)
       resetForm()
     } catch (e: any) {
@@ -202,11 +210,55 @@ export default function Ask() {
       <div className="grid grid-2">
         {/* Left: form */}
         <div className="card">
+          <div className="grid grid-2" style={{marginBottom:8}}>
+            <div>
+              <label>Type</label>
+              <select value={type} onChange={e=>setType(e.target.value)}>
+                <option>Incident</option>
+                <option>Service Request</option>
+                <option>Outage</option>
+                <option>Change</option>
+              </select>
+            </div>
+            <div>
+              <label>Urgency</label>
+              <select value={urgency} onChange={e=>setUrgency(e.target.value)}>
+                <option>Low</option>
+                <option>Medium</option>
+                <option>High</option>
+                <option>Critical</option>
+              </select>
+            </div>
+          </div>
+          <div className="grid grid-2" style={{marginBottom:8}}>
+            <div>
+              <label>Location</label>
+              <select value={location} onChange={e=>setLocation(e.target.value)}>
+                <option>Control Room</option>
+                <option>Substation</option>
+                <option>Field</option>
+                <option>HQ</option>
+                <option>Other</option>
+              </select>
+            </div>
+            <div>
+              <label>Asset/System</label>
+              <select value={asset} onChange={e=>setAsset(e.target.value)}>
+                <option>SAP</option>
+                <option>SCADA</option>
+                <option>NMS</option>
+                <option>Printer</option>
+                <option>VPN</option>
+                <option>Email/Outlook</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
           <label>Subject</label>
-          <input placeholder="Subject" value={subject} onChange={(e) => setSubject(e.target.value)} onKeyDown={onKeyDown} />
+          <input placeholder="Subject" value={subject} onChange={e => setSubject(e.target.value)} onKeyDown={onKeyDown} />
 
           <label className="mt-2">Details</label>
-          <textarea placeholder="Describe your issue..." value={body} onChange={(e) => setBody(e.target.value)} onKeyDown={onKeyDown} />
+          <textarea placeholder="Describe your issue..." value={body} onChange={e => setBody(e.target.value)} onKeyDown={onKeyDown} />
 
           <div className="mt-2">
             <label>Screenshot(s)</label>

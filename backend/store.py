@@ -240,14 +240,20 @@ def build_ticket_index():
     TICKET_VECT = TfidfVectorizer(ngram_range=(1, 2), max_features=20000)
     TICKET_MATRIX = normalize(TICKET_VECT.fit_transform(texts))
 
-def add_ticket(subject: str, body: str, tri: Dict[str, Any], attachments: Optional[List[Dict[str, Any]]] = None) -> Dict[str, Any]:
+def add_ticket(subject: str, body: str, tri: Dict[str, Any], attachments: Optional[List[Dict[str, Any]]] = None, extra: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     nid = (max([t["id"] for t in TICKETS]) + 1) if TICKETS else 1
     t = {
         "id": nid, "subject": subject, "body": body,
         "service": tri["service"], "assignment_group": tri["assignment_group"],
         "priority": tri["priority"], "status": "open",
         "triage_confidence": tri["confidence"], "created_at": datetime.now(timezone.utc).isoformat(),
-        "attachments": attachments or []
+        "attachments": attachments or [],
+        "type": extra.get("type") if extra else "Incident",
+        "location": extra.get("location") if extra else "",
+        "asset": extra.get("asset") if extra else "",
+        "urgency": extra.get("urgency") if extra else "Medium",
+        "worklogs": [],
+        "assigned_to": extra.get("assigned_to") if extra else "",
     }
     TICKETS.append(t)
     _save_json(TICKETS_JSON, TICKETS)
@@ -306,7 +312,11 @@ def metrics():
         "merged": len([t for t in TICKETS if t.get("status") == "merged"]),
         "resolved": len([t for t in TICKETS if t.get("status") == "resolved"]),
     }
-
+def get_mi_for_ticket(ticket_id: int) -> dict | None:
+    for mi in MI:
+        if ticket_id in mi.get("members", []):
+            return mi
+    return None
 def compute_sla_risk(t: Dict[str, Any]) -> float:
     pr = (t.get("priority") or "P3").upper()
     base = 0.9 if pr == "P1" else (0.7 if pr == "P2" else 0.4)

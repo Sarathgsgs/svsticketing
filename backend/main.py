@@ -26,6 +26,11 @@ class CreateTicket(BaseModel):
     subject: str
     body: str
     attachments: Optional[List[Attachment]] = None
+    type: Optional[str] = "Incident"
+    location: Optional[str] = ""
+    asset: Optional[str] = ""
+    urgency: Optional[str] = "Medium"
+    assigned_to: Optional[str] = ""
 
 class DeflectPayload(BaseModel):
     subject: str
@@ -108,7 +113,14 @@ def api_triage(payload: CreateTicket):
 def api_create_ticket(payload: CreateTicket):
     textq = f"{payload.subject}\n{payload.body}".strip()
     tri = services.classify(textq)
-    t = store.add_ticket(payload.subject, payload.body, tri, attachments=[a.dict() for a in (payload.attachments or [])])
+    extra = {
+        "type": payload.type,
+        "location": payload.location,
+        "asset": payload.asset,
+        "urgency": payload.urgency,
+        "assigned_to": payload.assigned_to,
+    }
+    t = store.add_ticket(payload.subject, payload.body, tri, attachments=[a.dict() for a in (payload.attachments or [])], extra=extra)
     dupes = store.dedup(textq, k=3)
     store.bump_counter(tri.get("service",""))
     return {"id": t["id"], "triage": tri, "duplicates": dupes}
@@ -277,3 +289,25 @@ def api_metrics_breakdown():
 @app.get("/api/metrics/series")
 def api_metrics_series(hours: int = 24):
     return store.metrics_series(hours)
+
+@app.get("/api/mi/for_ticket/{ticket_id}")
+def api_mi_for_ticket(ticket_id: int):
+    mi = store.get_mi_for_ticket(ticket_id)
+    return {"mi": mi}
+class WorklogPayload(BaseModel):
+    ticket_id: int
+    author: str
+    note: str
+
+@app.post("/api/tickets/worklog")
+def api_worklog(payload: WorklogPayload):
+    for t in store.TICKETS:
+        if t["id"] == payload.ticket_id:
+            t.setdefault("worklogs", []).append({
+                "author": payload.author,
+                "note": payload.note,
+                "ts": datetime.now(timezone.utc).isoformat()
+            })
+            store._save_json(store.TICKETS_JSON, store.TICKETS)
+            return {"ok": True}
+    return {"ok": False, "error": "not_found"}
