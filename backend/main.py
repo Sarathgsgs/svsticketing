@@ -2,10 +2,11 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import Optional, List, Dict, Any
-
+from external_ticket import router as external_ticket_router
+from tasks import run_auto_fix  # Celery task import
 import services, store, fixes, assist
 
-# optional actions import (fallback runner included)
+# Optional actions import (fallback runner included)
 try:
     import actions
     def run_action(action_id: str, params: Dict[str, Any]):
@@ -16,6 +17,7 @@ except Exception:
 
 app = FastAPI(title="TicketPilot API")
 app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+app.include_router(external_ticket_router)
 
 # --------- Models ----------
 class Attachment(BaseModel):
@@ -96,6 +98,22 @@ class ElevationRequest(BaseModel):
 class MiCreatePayload(BaseModel):
     seed_ticket_id: int
     threshold: float = 0.85
+
+class WorklogPayload(BaseModel):
+    ticket_id: int
+    author: str
+    note: str
+
+class AutoFixTicketIn(BaseModel):
+    id: str
+    issue: str
+
+# --------- Celery Auto-Fix Endpoint ----------
+@app.post("/api/autofix")
+async def trigger_auto_fix(ticket: AutoFixTicketIn):
+    """Enqueue long‑running auto‑fix operation asynchronously."""
+    task = run_auto_fix.delay(ticket.id)
+    return {"task_id": task.id, "message": "Auto‑fix started in background"}
 
 # --------- Endpoints ----------
 @app.post("/api/triage")
@@ -294,10 +312,6 @@ def api_metrics_series(hours: int = 24):
 def api_mi_for_ticket(ticket_id: int):
     mi = store.get_mi_for_ticket(ticket_id)
     return {"mi": mi}
-class WorklogPayload(BaseModel):
-    ticket_id: int
-    author: str
-    note: str
 
 @app.post("/api/tickets/worklog")
 def api_worklog(payload: WorklogPayload):

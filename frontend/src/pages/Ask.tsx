@@ -1,12 +1,14 @@
 import React, { useEffect, useState, type ChangeEvent, type KeyboardEvent } from "react"
 import axios from "axios"
+import ChatBot from "./ChatBot"
+import { JaroWinklerDistance } from "natural"
 
 const api = axios.create({ baseURL: "/api", timeout: 12000 })
 
 type LocalImage = { file: File; preview: string; ocr?: string; error?: string }
 
 export default function Ask() {
-  // New PowerGrid fields
+  // PowerGrid fields
   const [type, setType] = useState("Incident")
   const [urgency, setUrgency] = useState("Medium")
   const [location, setLocation] = useState("Control Room")
@@ -24,6 +26,7 @@ export default function Ask() {
   const [ocrBusy, setOcrBusy] = useState(false)
   const [fixing, setFixing] = useState<string | null>(null)
   const [warmed, setWarmed] = useState(false)
+  const [showBot, setShowBot] = useState(false)
 
   useEffect(() => {
     (async () => {
@@ -188,6 +191,62 @@ export default function Ask() {
 
   return (
     <>
+      {/* Floating ChatBot Button */}
+      <div style={{
+        position: "fixed",
+        bottom: 32,
+        right: 32,
+        zIndex: 2000
+      }}>
+        <button
+          className="btn"
+          style={{
+            borderRadius: "50%",
+            width: 56,
+            height: 56,
+            fontSize: 32,
+            boxShadow: "0 4px 16px #0006",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 0
+          }}
+          onClick={() => setShowBot(v => !v)}
+          aria-label="Open chatbot"
+          title="Open ChatBot"
+        >
+          <svg width="32" height="32" viewBox="0 0 32 32" style={{display:"block",margin:"auto"}}>
+            <circle cx="16" cy="16" r="15" fill="#60a5fa" />
+            <rect x="10" y="12" width="12" height="8" rx="4" fill="#fff"/>
+            <circle cx="13" cy="16" r="1.5" fill="#60a5fa"/>
+            <circle cx="19" cy="16" r="1.5" fill="#60a5fa"/>
+          </svg>
+        </button>
+      </div>
+      {showBot && (
+        <div style={{
+          position: "fixed",
+          bottom: 100,
+          right: 32,
+          width: 420,
+          maxWidth: "90vw",
+          zIndex: 2100,
+          background: "var(--panel2)",
+          border: "1px solid var(--border)",
+          borderRadius: 16,
+          boxShadow: "0 8px 32px #000a",
+          padding: 0
+        }}>
+          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",padding:"10px 16px",borderBottom:"1px solid var(--border)"}}>
+            <span style={{fontWeight:700}}>PowerGrid ChatBot</span>
+            <button className="btn-danger" style={{borderRadius:8,padding:"2px 10px"}} onClick={()=>setShowBot(false)}>×</button>
+          </div>
+          <div style={{padding:16}}>
+            <ChatBot />
+          </div>
+        </div>
+      )}
+
       {/* Guided strip */}
       <div className="card" style={{ marginBottom: 10 }}>
         <div style={{ display: "flex", gap: 10, alignItems: "center", flexWrap: "wrap" }}>

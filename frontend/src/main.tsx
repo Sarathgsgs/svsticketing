@@ -10,6 +10,7 @@ import Logout from "./pages/Logout"
 import Dashboard from "./pages/Dashboard"
 import Confirm from "./pages/Confirm"
 import "./index.css"
+import ChatBot from "./pages/ChatBot"
 
 function role(){ return localStorage.getItem("role") || "" }
 function RoleGate({ roles, children }:{ roles: string[], children: React.ReactNode }) {
@@ -55,12 +56,17 @@ const router = createBrowserRouter([
       <div className="page-head"><div className="breadcrumb">Home</div><div className="title">Dashboard</div></div>
       <Dashboard/>
     </Shell> },
+    
   { path: "/confirm", element: <Shell>
       <div className="page-head"><div className="breadcrumb">Notifications</div><div className="title">Confirm fix</div></div>
       <Confirm/>
     </Shell> },
+    { path: "/chatbot", element: <Shell>
+    <div className="page-head"><div className="breadcrumb">Service Desk</div><div className="title">ChatBot</div></div>
+    <ChatBot/>
+  </Shell> },
 ])
-
+  
 ReactDOM.createRoot(document.getElementById("root")!).render(
   <React.StrictMode><RouterProvider router={router}/></React.StrictMode>
 )

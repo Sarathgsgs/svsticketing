@@ -1,0 +1,11 @@
+ticket_id,text,category,priority,solution
+1,SCADA real-time data not updating for Substation-12. IEC-104 connection lost,Communication,Critical,Restart IEC-104 driver; check gateway IP and fiber link
+2,Historian not recording measurements since 02:00AM,Database,High,Restart historian service; check disk space and DB connection string
+3,VPN to 220kV Madurai substation keeps disconnecting,Security,Critical,Check VPN tunnel logs; verify certificate validity and vpn gateway route
+4,Alarm flooding after relay firmware update,SCADA,High,Rollback firmware or apply vendor patch; group duplicate alarms using alarm filters
+5,Remote control command blocked by safety interlock,Configuration,High,Verify interlock conditions and operator permissions; check command path
+6,Multiple failed login attempts detected on operator console,Security,Medium,Lock account; check source IP; force password reset and review logs
+7,SAP/PGMS login failure for user123,SCADA,High,Check if account is locked; reset password; check SAP roles
+8,RTU not communicating with SCADA after storm,Communication,Critical,"Check RTU power, comms link, and SCADA config"
+9,Outlook server not connecting for field staff,Communication,Medium,"Check network, VPN, and Outlook server status"
+10,Substation PC not booting after power failure,Hardware,High,"Check power supply, cables, and BIOS settings"
